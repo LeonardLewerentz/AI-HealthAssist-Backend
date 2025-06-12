@@ -12,72 +12,28 @@ import { BedrockRuntimeClient, InvokeModelCommand } from "@aws-sdk/client-bedroc
 async function getSummary(text, modelId, region = "us-east-1") {
   const client = new BedrockRuntimeClient({ region });
 
-  let prompt;
-  let requestBody;
-  let responseParser; // Function to parse the specific model's response
-
-  switch (modelId) {
-    case "anthropic.claude-v2":
-    case "anthropic.claude-v2:1": // Claude V2.1
-    case "anthropic.claude-instant-v1": // Claude Instant
-      prompt = `Human: Summarize the following text:\n\n<text>${text}</text>\n\nAssistant:`;
-      requestBody = JSON.stringify({
-        prompt: prompt,
-        max_tokens_to_sample: 500, // Adjust as needed for summary length
-        temperature: 0.3, // Lower for more deterministic summaries
-        top_p: 0.9,
-      });
-      responseParser = (rawBody) => {
-        const jsonBody = JSON.parse(rawBody);
-        return jsonBody.completion.trim();
-      };
-      break;
-
-    case "ai21.j2-mid":
-    case "ai21.j2-ultra":
-      prompt = `Summarize the following text:\n\n${text}\n\nSummary:`;
-      requestBody = JSON.stringify({
-        prompt: prompt,
-        maxTokens: 300, // Adjust as needed
-        temperature: 0.3,
-        topP: 0.9,
-        // You can add more parameters like 'stopSequences' if the model supports it
-      });
-      responseParser = (rawBody) => {
-        const jsonBody = JSON.parse(rawBody);
-        // AI21 typically returns an array of completions
-        return jsonBody.completions[0]?.data.text.trim();
-      };
-      break;
-
-    // Add more cases for other models (e.g., Amazon Titan, Cohere)
-    // Each model has its own prompt format and response structure.
-    case "amazon.titan-text-express-v1":
-    case "amazon.titan-text-lite-v1":
-        prompt = `Summarize the following text:\n\n${text}\n\nSummary:`;
-        requestBody = JSON.stringify({
-            inputText: prompt,
-            textGenerationConfig: {
-                maxTokenCount: 300,
-                temperature: 0.3,
-                topP: 0.9,
-            }
-        });
-        responseParser = (rawBody) => {
-            const jsonBody = JSON.parse(rawBody);
-            return jsonBody.results[0]?.outputText.trim();
-        };
-        break;
-
-    default:
-      throw new Error(`Unsupported model ID: ${modelId}`);
-  }
+  const messages = [
+    {
+      role: "user",
+      content: [
+        { type: "text", text: `Summarize the following text:\n\n${text}` }
+      ],
+    },
+  ];
+  const requestBody = JSON.stringify({
+    anthropic_version: "bedrock-2023-05-31", // Crucial for Bedrock Messages API
+    messages: messages,
+    max_tokens: 1000, // Use 'max_tokens' for Messages API (was 'max_tokens_to_sample')
+    temperature: 0.3, // Lower for more deterministic summaries
+    top_p: 0.9,
+    // top_k: 250, // Optional: uncomment if you want to use top_k
+  });
 
   const command = new InvokeModelCommand({
     body: requestBody,
     contentType: "application/json",
     accept: "application/json",
-    modelId: modelId,
+    modelId: "anthropic.claude-3-haiku-20240307-v1:0",
   });
 
   try {
@@ -85,16 +41,31 @@ async function getSummary(text, modelId, region = "us-east-1") {
     const decoder = new TextDecoder("utf-8");
     const rawBody = decoder.decode(response.body);
 
-    const summary = responseParser(rawBody);
-
-    if (!summary) {
-        throw new Error("Failed to parse summary from model response.");
+    const jsonBody = JSON.parse(rawBody);
+    let summary = "";
+    if (jsonBody.content && Array.isArray(jsonBody.content)) {
+      for (const block of jsonBody.content) {
+        if (block.type === "text" && block.text) {
+          summary += block.text;
+        }
+      }
     }
 
-    return summary;
+    if (!summary.trim()) { // Check if summary is empty after trimming whitespace
+      throw new Error("Failed to parse summary from model response or summary is empty.");
+    }
+
+    console.log("Generated Summary:", summary); // Log the summary for debugging
+    return summary.trim(); // Return trimmed summary
   } catch (error) {
-    console.error(`Error invoking Bedrock model ${modelId}:`, error);
+    console.error(`Error invoking Bedrock model ${targetModelId}:`, error);
+    // Include the original error message for better debugging
     throw new Error(`Failed to generate summary: ${error.message}`);
+
+
+
+
+
   }
 }
 

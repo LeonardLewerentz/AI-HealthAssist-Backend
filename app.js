@@ -1,3 +1,9 @@
+// Import the dotenv package
+import dotenv from 'dotenv';
+
+// Load environment variables from .env file
+dotenv.config();
+
 import express from 'express';
 import cors from 'cors'; // Import cors for handling cross-origin requests
 import { getSummary } from './bedrock.js'; // Import your getSummary function
@@ -49,7 +55,7 @@ app.post('/summarize', async (req, res) => {
 
   try {
     // Call your getSummary function
-    const summary = await getSummary(text, modelId, region); // Pass region if provided, otherwise it uses default
+    const summary = await getSummary(text, "anthropic.claude-3-haiku-20240307-v1:0", "ap-southeast-2"); // Pass region if provided, otherwise it uses default
 
     res.json({ summary });
   } catch (error) {
