@@ -58,7 +58,7 @@ async function getSummary(text, modelId, region = "us-east-1") {
     console.log("Generated Summary:", summary); // Log the summary for debugging
     return summary.trim(); // Return trimmed summary
   } catch (error) {
-    console.error(`Error invoking Bedrock model ${targetModelId}:`, error);
+    console.error(`Error invoking Bedrock model:`, error);
     // Include the original error message for better debugging
     throw new Error(`Failed to generate summary: ${error.message}`);
 
