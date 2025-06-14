@@ -25,7 +25,7 @@ export const up = async (queryInterface) => {
       allowNull: false
     },
     address: {
-      type: Sequelize.DataTypes.STRING,
+      type: Sequelize.DataTypes.TEXT,
       allowNull: false
     },
     createdAt: {

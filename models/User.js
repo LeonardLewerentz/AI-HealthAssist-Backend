@@ -50,11 +50,8 @@ const createUserModel = (sequelize) => {
       }
     },
     address: {
-      type: DataTypes.STRING,
+      type: DataTypes.TEXT,
       allowNull: false,
-      validate: {
-        len: [5, 255]
-      }
     }
   }, {
     sequelize,

@@ -16,7 +16,7 @@ async function getSummary(text, modelId, region = "us-east-1") {
     {
       role: "user",
       content: [
-        { type: "text", text: `Summarize the following text:\n\n${text}` }
+        { type: "text", text: `Summarize the following text of medical conditions, and give possible causes of the symptoms:\n\n${text}` }
       ],
     },
   ];

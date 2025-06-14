@@ -7,6 +7,7 @@ import bcrypt from 'bcrypt';
 
 
 import  createUserModel  from './models/User.js';
+import  createSubmissionModel from './models/Submission.js'
 
 import express from 'express';
 import cors from 'cors';
@@ -51,6 +52,7 @@ const authenticateToken = (req, res, next) => {
 
 
 let User = createUserModel(sequelize)
+let Submission = createSubmissionModel(sequelize)
 
 app.post('/login', async (req, res) => {
   // 1. Validate credentials
@@ -63,7 +65,7 @@ app.post('/login', async (req, res) => {
 
   // 3. Generate JWT (fixed syntax)
   const token = jwt.sign(
-    { userId: user._id },
+    { userId: user.id },
     process.env.JWT_SECRET,
     { expiresIn: '1h' }
   );
@@ -71,6 +73,35 @@ app.post('/login', async (req, res) => {
   res.json({ token });  // Send response
 });
 
+app.post('/signup', async (req, res) => {
+  try {
+    // Check if the user already exists
+    const existingUser = await User.findOne({ where: { email: req.body.email } });
+    if (existingUser) {
+      return res.status(409).json({ error: 'User with this email already exists.' });
+    }
+
+    const user = await User.create({
+      name: req.body.name,
+      email: req.body.email,
+      password: req.body.password,
+      dob: req.body.dob,
+      address: req.body.address
+    });
+    
+    res.status(201).json(user); // Respond with the created user
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'An error occurred while creating the user.' });
+  }
+});
+
+app.post('/submitform', authenticateToken, async (req, res) => {
+  const user = await User.findOne({where: {id: req.user.userId}})
+  const submission = await Submission.create({"patientName":user.name, "patientDob":user.dob, "patientAddress":user.address, "aiSummary": req.body.aiSummary})
+  console.log(Submission.findOne({where: {id: submission.id}}));
+  res.status(200).send('Form submitted successfully!');
+})
 
 // Root endpoint
 app.get('/', (req, res) => {
