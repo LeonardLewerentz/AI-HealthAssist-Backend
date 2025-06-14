@@ -37,6 +37,10 @@ export const up = async (queryInterface) => {
       type: Sequelize.DataTypes.DATE,
       allowNull: false,
       defaultValue: Sequelize.DataTypes.NOW
+    },
+    isdoctor: {
+      type: Sequelize.DataTypes.BOOLEAN,
+      allowNull: false
     }
   });
 

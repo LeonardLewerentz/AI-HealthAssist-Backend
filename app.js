@@ -69,8 +69,9 @@ app.post('/login', async (req, res) => {
     process.env.JWT_SECRET,
     { expiresIn: '1h' }
   );
+  const isDoctor = user.isdoctor;
 
-  res.json({ token });  // Send response
+  res.json({ token, isDoctor });  // Send response
 });
 
 app.post('/signup', async (req, res) => {
@@ -86,10 +87,11 @@ app.post('/signup', async (req, res) => {
       email: req.body.email,
       password: req.body.password,
       dob: req.body.dob,
-      address: req.body.address
+      address: req.body.address,
+      isdoctor: false
     });
     
-    res.status(201).json(user); // Respond with the created user
+    res.status(201);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'An error occurred while creating the user.' });
@@ -101,6 +103,16 @@ app.post('/submitform', authenticateToken, async (req, res) => {
   const submission = await Submission.create({"patientName":user.name, "patientDob":user.dob, "patientAddress":user.address, "aiSummary": req.body.aiSummary})
   console.log(Submission.findOne({where: {id: submission.id}}));
   res.status(200).send('Form submitted successfully!');
+})
+
+app.get('/listsubmissions', authenticateToken, async (req, res) => {
+  const user = await User.findOne({where: {id: req.user.userId}})
+  if (user.isdoctor) {
+    const result = await Submission.findAll()
+    res.status(200).json(result)
+  } else {
+    res.status(403)
+  }
 })
 
 // Root endpoint

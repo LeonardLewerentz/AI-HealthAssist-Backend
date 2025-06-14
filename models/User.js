@@ -51,7 +51,11 @@ const createUserModel = (sequelize) => {
     },
     address: {
       type: DataTypes.TEXT,
-      allowNull: false,
+      allowNull: false
+    },
+    isdoctor: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false
     }
   }, {
     sequelize,

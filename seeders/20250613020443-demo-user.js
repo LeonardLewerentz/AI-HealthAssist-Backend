@@ -27,7 +27,8 @@ export default {
         dob: '1990-05-15',
         address: '123 Main St, Anytown',
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
+        isdoctor: true
       },
       {
         name: 'Jane Smith',
@@ -36,7 +37,8 @@ export default {
         dob: '1985-11-20',
         address: '456 Oak Ave, Somewhere',
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
+        isdoctor: false
       },
       {
         name: 'Alice Johnson',
@@ -45,7 +47,8 @@ export default {
         dob: '1992-07-01',
         address: '789 Pine Ln, Nowhere',
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
+        isdoctor: false
       }
     ], {});
   },
