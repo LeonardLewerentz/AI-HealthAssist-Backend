@@ -60,6 +60,24 @@ const authenticateToken = (req, res, next) => {
 let User = createUserModel(sequelize)
 let Submission = createSubmissionModel(sequelize)
 
+app.post('/submitform', authenticateToken, async (req, res) => {
+  const user = await User.findOne({where: {id: req.user.userId}})
+  const submission = await Submission.create({"patientName":user.name, "patientDob":user.dob, "patientAddress":user.address, "aiSummary": req.body.aiSummary})
+  console.log(Submission.findOne({where: {id: submission.id}}));
+  res.status(200).send('Form submitted successfully!');
+})
+
+app.get('/listsubmissions', authenticateToken, async (req, res) => {
+  const user = await User.findOne({where: {id: req.user.userId}})
+  if (user.isdoctor) {
+    const result = await Submission.findAll()
+    res.status(200).json(result)
+  } else {
+    res.status(403)
+  }
+})
+
+
 app.post('/login', async (req, res) => {
   // 1. Validate credentials
   const user = await User.findOne({ where: {email: req.body.email} });
