@@ -41,6 +41,12 @@ export const up = async (queryInterface) => {
     isdoctor: {
       type: Sequelize.DataTypes.BOOLEAN,
       allowNull: false
+    },
+    fileName: {
+      type: Sequelize.DataTypes.STRING(16),
+    },
+    encryptionKey: {
+      type: Sequelize.DataTypes.STRING(64),
     }
   });
 

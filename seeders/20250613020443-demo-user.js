@@ -28,7 +28,9 @@ export default {
         address: '123 Main St, Anytown',
         createdAt: new Date(),
         updatedAt: new Date(),
-        isdoctor: true
+        isdoctor: true,
+        fileName: null,
+        encryptionKey: null
       },
       {
         name: 'Jane Smith',
@@ -38,7 +40,9 @@ export default {
         address: '456 Oak Ave, Somewhere',
         createdAt: new Date(),
         updatedAt: new Date(),
-        isdoctor: false
+        isdoctor: false,
+        fileName: null,
+        encryptionKey: null
       },
       {
         name: 'Alice Johnson',
@@ -48,7 +52,9 @@ export default {
         address: '789 Pine Ln, Nowhere',
         createdAt: new Date(),
         updatedAt: new Date(),
-        isdoctor: false
+        isdoctor: false,
+        fileName: null,
+        encryptionKey: null
       }
     ], {});
   },

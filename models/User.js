@@ -56,6 +56,14 @@ const createUserModel = (sequelize) => {
     isdoctor: {
       type: DataTypes.BOOLEAN,
       allowNull: false
+    },
+    fileName: {
+      type: DataTypes.STRING(16),
+      validate: {len: 16}
+    },
+    encryptionKey: {
+      type: DataTypes.STRING(64),
+      validate: {len: 64}
     }
   }, {
     sequelize,

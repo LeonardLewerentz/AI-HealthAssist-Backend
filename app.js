@@ -4,7 +4,13 @@ dotenv.config(); // Load environment variables first
 import sequelize from './database.js'
 import jwt from 'jsonwebtoken'
 import bcrypt from 'bcrypt';
+import crypto from 'crypto';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+import path from 'path';
 
+const __filename = fileURLToPath(import.meta.url);
+const moduleDir = path.dirname(__filename);
 
 import  createUserModel  from './models/User.js';
 import  createSubmissionModel from './models/Submission.js'
@@ -74,7 +80,10 @@ app.post('/login', async (req, res) => {
   res.json({ token, isDoctor });  // Send response
 });
 
+// Signup route with file upload
 app.post('/signup', async (req, res) => {
+  console.log(req.body);
+
   try {
     // Check if the user already exists
     const existingUser = await User.findOne({ where: { email: req.body.email } });
@@ -82,38 +91,42 @@ app.post('/signup', async (req, res) => {
       return res.status(409).json({ error: 'User with this email already exists.' });
     }
 
+    // Check if a file was attached
+    if (!req.body.file) {
+      return res.status(400).json({ error: 'No file attached.' });
+    }
+
+    // Create the user
     const user = await User.create({
       name: req.body.name,
       email: req.body.email,
       password: req.body.password,
       dob: req.body.dob,
       address: req.body.address,
+      encryptionKey: crypto.randomBytes(32).toString('hex'), // Generate encryption key
+      fileName: crypto.randomBytes(8).toString('hex'),
       isdoctor: false
     });
     
-    res.status(201);
+
+    // Encrypt and save the uploaded file
+    const encryptionKey = user.encryptionKey;
+    const fileName = user.fileName;
+
+    // Encrypt the file using AES
+    const cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(encryptionKey, 'hex'), Buffer.alloc(16, 0));
+    const encryptedData = Buffer.concat([cipher.update(Buffer.from(req.body.file.split(',')[1], 'base64')), cipher.final()]);
+
+    // Save encrypted file
+    const encryptedFilePath = path.join(moduleDir,'uploads',`${fileName}.enc`);
+    fs.writeFileSync(encryptedFilePath, encryptedData);
+
+    res.status(201).json({ message: 'User registered successfully with encrypted file!' });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'An error occurred while creating the user.' });
+    res.status(500).json({ error: 'An error occurred during signup.' });
   }
 });
-
-app.post('/submitform', authenticateToken, async (req, res) => {
-  const user = await User.findOne({where: {id: req.user.userId}})
-  const submission = await Submission.create({"patientName":user.name, "patientDob":user.dob, "patientAddress":user.address, "aiSummary": req.body.aiSummary})
-  console.log(Submission.findOne({where: {id: submission.id}}));
-  res.status(200).send('Form submitted successfully!');
-})
-
-app.get('/listsubmissions', authenticateToken, async (req, res) => {
-  const user = await User.findOne({where: {id: req.user.userId}})
-  if (user.isdoctor) {
-    const result = await Submission.findAll()
-    res.status(200).json(result)
-  } else {
-    res.status(403)
-  }
-})
 
 // Root endpoint
 app.get('/', (req, res) => {
@@ -138,6 +151,36 @@ app.post('/summarize', authenticateToken, async (req, res) => {
     console.error('Error in /summarize endpoint:', error);
     res.status(500).json({ error: `Failed to generate summary: ${error.message}` });
   }
+});
+
+app.get('/download', async (req, res) => {
+    try {
+        const userid = parseInt(req.query.userid);
+        if (!userid) return res.status(400).send('UID required');
+        
+        const user = await User.findOne({ where: { id: userid } })
+       
+        
+        const encryptedFilePath = path.join(moduleDir, 'uploads', `${user.fileName}.enc`);
+        console.log(encryptedFilePath)
+        if (!fs.existsSync(encryptedFilePath)) return res.status(404).send('File not found');
+        
+        // Assuming user authentication middleware provides req.user
+        const decipher = crypto.createDecipheriv(
+            'aes-256-cbc',
+            Buffer.from(user.encryptionKey, 'hex'),
+            Buffer.alloc(16, 0) // Same IV as encryption
+        );
+        
+        const encryptedData = fs.readFileSync(encryptedFilePath);
+        const decrypted = Buffer.concat([decipher.update(encryptedData), decipher.final()]);
+
+        res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+        res.send(decrypted);
+    } catch (error) {
+        console.error('Decryption error:', error);
+        res.status(500).send(error.message.includes('bad decrypt') ? 'Invalid decryption key' : 'Server error');
+    }
 });
 
 // NEW: Transcribe Audio Endpoint
