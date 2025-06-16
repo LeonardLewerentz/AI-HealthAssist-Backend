@@ -174,7 +174,12 @@ app.post('/summarize', authenticateToken, async (req, res) => {
   }
 });
 
-app.get('/download', async (req, res) => {
+app.get('/download', authenticateToken, async (req, res) => {
+    const accessingUser = await User.findOne({where: {id: req.user.userId}})
+    if (!user.isdoctor) {
+      res.status(403)
+    } 
+    
     try {
         const userid = parseInt(req.query.userid);
         if (!userid) return res.status(400).send('UID required');
