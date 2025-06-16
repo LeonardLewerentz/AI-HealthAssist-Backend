@@ -8,6 +8,7 @@ import crypto from 'crypto';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import sharp from 'sharp';
 
 const __filename = fileURLToPath(import.meta.url);
 const moduleDir = path.dirname(__filename);
@@ -38,6 +39,7 @@ const upload = multer({
     fileSize: 10 * 1024 * 1024, // Limit file size to 10MB
   },
 });
+app.use(express.json({ limit: '50mb' }));  // Adjust limit based on needs
 
 // Middleware
 app.use(express.json()); // To parse JSON request bodies
@@ -62,7 +64,7 @@ let Submission = createSubmissionModel(sequelize)
 
 app.post('/submitform', authenticateToken, async (req, res) => {
   const user = await User.findOne({where: {id: req.user.userId}})
-  const submission = await Submission.create({"patientName":user.name, "patientDob":user.dob, "patientAddress":user.address, "aiSummary": req.body.aiSummary})
+  const submission = await Submission.create({"patientName":user.name, "patientDob":user.dob, "patientAddress":user.address, "aiSummary": req.body.aiSummary, "patientId": user.id})
   console.log(Submission.findOne({where: {id: submission.id}}));
   res.status(200).send('Form submitted successfully!');
 })
@@ -133,7 +135,8 @@ app.post('/signup', async (req, res) => {
 
     // Encrypt the file using AES
     const cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(encryptionKey, 'hex'), Buffer.alloc(16, 0));
-    const encryptedData = Buffer.concat([cipher.update(Buffer.from(req.body.file.split(',')[1], 'base64')), cipher.final()]);
+    const pngFile = await sharp(Buffer.from(req.body.file.split(',')[1], 'base64')).toFormat('png').toBuffer();
+    const encryptedData = Buffer.concat([cipher.update(pngFile), cipher.final()]);
 
     // Save encrypted file
     const encryptedFilePath = path.join(moduleDir,'uploads',`${fileName}.enc`);
@@ -193,7 +196,8 @@ app.get('/download', async (req, res) => {
         const encryptedData = fs.readFileSync(encryptedFilePath);
         const decrypted = Buffer.concat([decipher.update(encryptedData), decipher.final()]);
 
-        res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+        res.setHeader('Content-Disposition', `attachment; filename="idcarditem.png"`);
+        res.setHeader('Content-Type', `image/png`);
         res.send(decrypted);
     } catch (error) {
         console.error('Decryption error:', error);
