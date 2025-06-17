@@ -176,7 +176,7 @@ app.post('/summarize', authenticateToken, async (req, res) => {
 
 app.get('/download', authenticateToken, async (req, res) => {
     const accessingUser = await User.findOne({where: {id: req.user.userId}})
-    if (!user.isdoctor) {
+    if (!accessingUser.isdoctor) {
       res.status(403)
     } 
     
